@@ -35,13 +35,14 @@
 //
 // Select your platform port
 //
-#include "src/ports/esp32/wroom.h"
+//#include "src/ports/esp32/wroom.h"
 //#include "src/ports/avr/mega.h"
 //#include "src/ports/teensy/protoboard.h"
 //#include "src/ports/esp32/wroom-ext1.h"
 //#include "src/ports/teensy/uone.h"
 //#include "src/ports/avr/midilab_mega.h"
 //#include "src/ports/avr/afourtrackmind_mega.h"
+#include "src/ports/rp2040/pico_oled.h"
 
 void setup() {
   // inits all hardware setup for the selected port
@@ -49,5 +50,32 @@ void setup() {
 }
 
 void loop() {
+#ifndef USE_DUAL_CORE_RP2040
+  // Single core mode - run sequencer on main core
+  aciduino.run();
+#else
+  // Dual core mode - only UI refresh on core 0
+  // Sequencer runs on core 1 (see loop1)
+  // Keep this loop minimal for UI responsiveness
+  delay(1);
+#endif
+}
+
+// RP2040 Dual-Core Support
+// Core 1 handles time-critical sequencer tasks
+#ifdef USE_DUAL_CORE_RP2040
+
+void setup1() {
+  // Core 1 initialization
+  // Hardware is already initialized by core 0
+  // This core will handle sequencer timing
+  delay(100); // Wait for core 0 to complete initialization
+}
+
+void loop1() {
+  // Core 1 main loop - sequencer processing
+  // This provides dedicated CPU time for timing-critical tasks
   aciduino.run();
 }
+
+#endif
