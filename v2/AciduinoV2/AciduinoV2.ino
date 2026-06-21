@@ -35,7 +35,8 @@
 //
 // Select your platform port
 //
-#include "src/ports/esp32/wroom.h"
+#include "src/ports/esp32/wroom_vs1053.h"   // ESP32-WROOM + VS1053B GM MIDI synth
+//#include "src/ports/esp32/wroom.h"
 //#include "src/ports/avr/mega.h"
 //#include "src/ports/teensy/protoboard.h"
 //#include "src/ports/esp32/wroom-ext1.h"
@@ -50,4 +51,8 @@ void setup() {
 
 void loop() {
   aciduino.run();
+#if defined(USE_MUX_KEYPAD)
+  // scan the 4x4 keypad (CD74HC4067) and feed it into uCtrl navigation
+  muxKeypadScan();
+#endif
 }
