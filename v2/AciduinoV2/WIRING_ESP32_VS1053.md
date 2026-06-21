@@ -14,8 +14,9 @@ Select this build in `AciduinoV2.ino`:
 
 ## Arduino IDE setup
 - **Board:** ESP32 Dev Module (esp32 by Espressif core).
-- **Libraries:** `U8g2` (Oliver Kraus). MIDI + uCtrl + uClock are bundled as
-  submodules under `src/` — run `git submodule update --init` once after cloning.
+- **Libraries:** `U8g2` (Oliver Kraus). MIDI + uCtrl + uClock are **bundled in
+  `src/`** (vendored into this branch), so a plain ZIP download or clone compiles
+  with no `git submodule` step required.
 - The VS1053 driver and keypad scanner are in `src/devices/` (no extra libraries).
 
 ## Wiring (ESP32-WROOM-32)
