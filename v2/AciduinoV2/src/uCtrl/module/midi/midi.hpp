@@ -25,7 +25,8 @@
 #endif
 
 // want to use Bluetooth midi stack? keep in mind that consumes almost all of your code memory
-#define USE_BT_MIDI_ESP32
+// disabled: not needed for VS1053 build; bundled BLE-MIDI header incompatible with current ESP32 core
+//#define USE_BT_MIDI_ESP32
 
 #if defined(USE_BT_MIDI_ESP32) && defined(CONFIG_BT_ENABLED) && (defined(ARDUINO_ARCH_ESP32) || defined(ESP32))
 #include "BLE-MIDI/BLEMIDI_Transport.h"
