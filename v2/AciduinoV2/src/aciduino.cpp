@@ -32,9 +32,15 @@ void Aciduino::initSequencer()
 
   // init default track output data
   for(uint8_t track=0; track < TRACK_NUMBER_303+TRACK_NUMBER_808; track++) {
+    bool is_drum = (track >= TRACK_NUMBER_303);
     _track_output_setup[track].output = MIDI_OUTPUT;
-    _track_output_setup[track].channel = track;
+    // drums default to MIDI channel 10 (index 9) so General-MIDI drum kits play
+    // correctly; melodic (303) tracks keep one channel each
+    _track_output_setup[track].channel = is_drum ? 9 : track;
     _track_output_setup[track].port = 0;
+    // sensible General-MIDI default instruments: Synth Bass 1 for 303 voices,
+    // standard drum kit (program 0 on ch10) for the 808 track
+    _track_output_setup[track].program = is_drum ? 0 : 38;
   }
   
   // the acid sequencer main output callback
@@ -54,8 +60,20 @@ void Aciduino::initSequencer()
 
   // load epprom saved session
   loadSession();
+
+  // guard against uninitialized/legacy program values (e.g. 0xFF from a fresh
+  // or older-layout epprom) so we never emit an out-of-range Program Change
+  for(uint8_t track=0; track < TRACK_NUMBER_303+TRACK_NUMBER_808; track++) {
+    if (_track_output_setup[track].program > 127) {
+      _track_output_setup[track].program = (track >= TRACK_NUMBER_303) ? 0 : 38;
+    }
+  }
+
   // load first pattern
   loadPattern(0);
+
+  // push the loaded instruments to the synths so the device matches the UI
+  sendTrackPrograms();
 }
 
 void Aciduino::uClockSetup()
@@ -321,6 +339,8 @@ uint8_t Aciduino::getTrackOutputParam(uint8_t param, int8_t track)
       return _track_output_setup[track_change].channel;
     case TRACK_PORT:
       return _track_output_setup[track_change].port;
+    case TRACK_PROGRAM:
+      return _track_output_setup[track_change].program;
     default:
       break;
   }
@@ -338,9 +358,24 @@ void Aciduino::setTrackOutputParam(uint8_t param, uint8_t data, int8_t track)
       break;
     case TRACK_CHANNEL:
       ATOMIC(_track_output_setup[track_change].channel = data)
+      // set the instrument up on the newly selected channel
+      sendProgramChange(_track_output_setup[track_change].program,
+                        _track_output_setup[track_change].channel,
+                        _track_output_setup[track_change].port);
       break;
     case TRACK_PORT:
       ATOMIC(_track_output_setup[track_change].port = data)
+      // make the newly selected device reflect this track's instrument
+      sendProgramChange(_track_output_setup[track_change].program,
+                        _track_output_setup[track_change].channel,
+                        _track_output_setup[track_change].port);
+      break;
+    case TRACK_PROGRAM:
+      ATOMIC(_track_output_setup[track_change].program = data)
+      // audition the instrument change immediately
+      sendProgramChange(data,
+                        _track_output_setup[track_change].channel,
+                        _track_output_setup[track_change].port);
       break;
     default:
       break;
@@ -409,6 +444,30 @@ void Aciduino::sendMidiCC(uint8_t cc, uint8_t value, uint8_t channel, uint8_t po
     msg.data2 = value;
     msg.channel = channel;
     uCtrl.midi->write(&msg, port+1, 0);
+  }
+}
+
+void Aciduino::sendProgramChange(uint8_t program, uint8_t channel, uint8_t port, uint8_t interrupted) {
+  if (interrupted) {
+    msg_interrupt_pots.type = uctrl::protocol::midi::ProgramChange;
+    msg_interrupt_pots.data1 = program;
+    msg_interrupt_pots.data2 = 0;
+    msg_interrupt_pots.channel = channel;
+    uCtrl.midi->write(&msg_interrupt_pots, port+1, 1);
+  } else {
+    msg.type = uctrl::protocol::midi::ProgramChange;
+    msg.data1 = program;
+    msg.data2 = 0;
+    msg.channel = channel;
+    uCtrl.midi->write(&msg, port+1, 0);
+  }
+}
+
+void Aciduino::sendTrackPrograms() {
+  for(uint8_t track=0; track < TRACK_NUMBER_303+TRACK_NUMBER_808; track++) {
+    sendProgramChange(_track_output_setup[track].program,
+                      _track_output_setup[track].channel,
+                      _track_output_setup[track].port);
   }
 }
 
@@ -612,9 +671,13 @@ void Engine808::setBufferTrack(uint8_t track)
 
 bool Aciduino::checkEppromDataLayoutChange()
 {
-  uint16_t pattern_size = 0;
-  uCtrl.storage->load((void*)&pattern_size, sizeof(pattern_size), _epprom_check_data_address);
-  if (pattern_size == _pattern_total_mem_size) {
+  // marker folds in the session size so any session-struct change (e.g. adding
+  // a per-track program byte) also forces a clean epprom reinit, not just a
+  // pattern-memory change
+  uint16_t layout_marker = 0;
+  uint16_t expected = _pattern_total_mem_size + _epprom_session_size;
+  uCtrl.storage->load((void*)&layout_marker, sizeof(layout_marker), _epprom_check_data_address);
+  if (layout_marker == expected) {
     return false;
   } else {
     return true;
@@ -623,7 +686,7 @@ bool Aciduino::checkEppromDataLayoutChange()
 
 void Aciduino::eppromInit()
 {
-    uint16_t pattern_size = _pattern_total_mem_size;
+    uint16_t pattern_size = _pattern_total_mem_size + _epprom_session_size;
     // init epprom session/pattern memory
     // init all epprom slots to defaults
     saveSession();

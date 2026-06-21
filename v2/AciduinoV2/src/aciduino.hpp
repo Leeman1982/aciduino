@@ -77,12 +77,14 @@ typedef struct
   uint8_t output;
   uint8_t channel;
   uint8_t port;
+  uint8_t program;  // GM program/instrument (0-127) sent as MIDI Program Change
 } TRACK_OUTPUT_DATA;
 
 typedef enum {
   TRACK_OUTPUT,
   TRACK_CHANNEL,
   TRACK_PORT,
+  TRACK_PROGRAM,
 } TRACK_OUTPUT_PARAM;
 
 // pattern and mute automation grid
@@ -123,6 +125,9 @@ public:
 
   // midi
   void sendMidiCC(uint8_t cc, uint8_t value, uint8_t channel, uint8_t port, uint8_t interrupted = 0);
+  void sendProgramChange(uint8_t program, uint8_t channel, uint8_t port, uint8_t interrupted = 0);
+  // (re)send each track's GM program to its output port/channel
+  void sendTrackPrograms();
   void sendNote(uint8_t note, uint8_t channel, uint8_t port, uint8_t velocity);
   inline void sendMidiClock();
   void sendMidiStart();

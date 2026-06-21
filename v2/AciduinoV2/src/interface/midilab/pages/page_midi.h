@@ -40,6 +40,30 @@ void midi_page_init()
   uCtrl.page->set("midi", midi_page_create, midi_page_destroy, midi_page_refresh, midi_page_digital_input, nullptr, 1);       
 
   // register midi controller options per track
+#if defined(USE_VS1053_SYNTH)
+  // General-MIDI control set the VS1053B actually responds to (standard CCs).
+  // These reach the VS1053 whenever the track's output port is the VS1053.
+  if (TRACK_NUMBER_303 > 0) {
+    midiControllerComponent.set303Control("cutoff", 74);   // brightness
+    midiControllerComponent.set303Control("reso.", 71);    // harmonic content
+    midiControllerComponent.set303Control("attack", 73);
+    midiControllerComponent.set303Control("decay", 75);
+    midiControllerComponent.set303Control("release", 72);
+    midiControllerComponent.set303Control("volume", 7);    // channel volume
+    midiControllerComponent.set303Control("pan", 10);
+    midiControllerComponent.set303Control("reverb", 91);
+    midiControllerComponent.set303Control("chorus", 93);
+    midiControllerComponent.set303Control("mod", 1);
+    midiControllerComponent.set303Control("express", 11);
+    midiControllerComponent.set303Control("sustain", 64);
+  }
+  if (TRACK_NUMBER_808 > 0) {
+    midiControllerComponent.set808Control("volume", 7);
+    midiControllerComponent.set808Control("pan", 10);
+    midiControllerComponent.set808Control("reverb", 91);
+    midiControllerComponent.set808Control("chorus", 93);
+  }
+#else
   if (TRACK_NUMBER_303 > 0) {
     // max 16 controls!
     midiControllerComponent.set303Control("filter", 74);
@@ -79,5 +103,6 @@ void midi_page_init()
     midiControllerComponent.set808Control("mt level", 51);
     midiControllerComponent.set808Control("ht level", 54);
     midiControllerComponent.set808Control("rs level", 57);
-  }  
+  }
+#endif
 }

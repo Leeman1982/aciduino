@@ -39,6 +39,9 @@
 // drive the 4x4 keypad through a CD74HC4067 and scan it from loop()
 #define USE_MUX_KEYPAD
 
+// tailor the MIDI control page to the VS1053B General-MIDI parameter set
+#define USE_VS1053_SYNTH
+
 //============================================
 // PINOUT Setup
 //============================================
@@ -99,18 +102,11 @@ void initPort() {
   uCtrl.initStorage();
 
   //
-  // VS1053B bring-up (real-time MIDI mode over SPI/SDI)
+  // VS1053B bring-up (real-time MIDI mode over SPI/SDI).
+  // In GM mode the VS1053 auto-treats MIDI channel 10 as drums; per-track GM
+  // instruments are sent later by aciduino.init() -> sendTrackPrograms().
   //
   vs1053_begin();
-  // sensible GM defaults on the VS1053 so routed tracks sound good out of the box:
-  //  - 303 melodic tracks (ch 1-4) -> Synth Bass 1 (GM program 38)
-  //  - 808 drum track (ch 10) -> GM drum kit (bank 0x78)
-  for (uint8_t ch = 0; ch < 4; ch++) {
-    vs1053_talkMIDI(0xB0 | ch, 0x00, 0x00);   // bank select MSB 0 (melodic)
-    vs1053_talkMIDI(0xC0 | ch, 38, 0);        // program change -> Synth Bass 1
-  }
-  vs1053_talkMIDI(0xB9, 0x00, 0x78);          // ch10 bank select MSB -> drums
-  vs1053_talkMIDI(0xC9, 0, 0);                // ch10 program 0 (standard kit)
 
   //
   // DIN Module - rotary encoder only (nav buttons come from the keypad mux)
@@ -139,17 +135,18 @@ void initPort() {
   // MIDI Module
   //
   uCtrl.initMidi();
+  // plug the VS1053B FIRST so it is port 0 ("midi1") - tracks default to port 0,
+  // so a freshly flashed unit plays through the on-board VS1053 out of the box
+  uCtrl.midi->plug(&MIDI_VS1053);
 #if defined(USE_MIDI1)
-  uCtrl.midi->plug(&MIDI1);
+  uCtrl.midi->plug(&MIDI1);     // "midi2" - USB serial MIDI bridge
   #if defined(USE_SERIAL_MIDI_115200)
   Serial.begin(115200);
   #endif
 #endif
 #if defined(USE_MIDI3)
-  uCtrl.midi->plug(&MIDI3);
+  uCtrl.midi->plug(&MIDI3);     // "midi3" - 5-pin hardware MIDI DIN out
 #endif
-  // the VS1053B as an on-board MIDI output port (its own audio jack)
-  uCtrl.midi->plug(&MIDI_VS1053);
 
   uCtrl.midi->setMidiInputCallback(Aciduino::midiInputHandler);
   uCtrl.setOn250usCallback(Aciduino::midiHandleSync);

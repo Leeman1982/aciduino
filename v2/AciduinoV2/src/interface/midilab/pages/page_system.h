@@ -38,7 +38,8 @@ void system_page_refresh(uint8_t subpage)
     uCtrl.oled->print("track config", 3, 1);
     uCtrl.page->component(trackOutputSelectorComponent, 4, 1, true);
     uCtrl.page->component(midiChannelConfigComponent, 4, 2);
-    
+    uCtrl.page->component(trackProgramSelectorComponent, 5, 1);
+
     uCtrl.oled->print("system resources", 6, 1);
     uCtrl.page->component(systemResourcesComponent, 7, 1);
     

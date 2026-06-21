@@ -35,6 +35,7 @@
 #include "components/system_clock_source.hpp"
 #include "components/system_shuffle.hpp"
 #include "components/system_midi_channel.hpp"
+#include "components/system_track_program.hpp"
 #include "components/system_tempo_transport.hpp"
 // pages
 #include "pages/page_generative.h"

@@ -64,16 +64,34 @@ left→right, top→bottom (`1 2 3 A / 4 5 6 B / 7 8 9 C / * 0 # D`):
   parameter. Hold **Shift** + Value−/+ to change the selected track.
 - Re-order `muxKeyMap[]` to match however you physically wire keys to the 4067.
 
-## Routing audio to the VS1053 (dual output)
+## Output routing & instrument selection
 
-On the **System** page, each track has an output **port** selector. After this build,
-the ports are: `midi1` (USB), `midi2` (DIN out), `midi3` (**VS1053B**, on-board audio).
-- Route 303 tracks to **midi3** to hear them on the VS1053's jack.
-- Route the 808 track to **midi3** and set its channel to **10** for GM drums.
-- Route other tracks to `midi1`/`midi2` to play external gear simultaneously.
+The VS1053 is plugged as the **first** MIDI port, so the unit plays through the
+on-board VS1053 **out of the box** — no routing needed. The MIDI ports are:
+`midi1` = **VS1053B** (on-board audio jack), `midi2` = USB serial MIDI,
+`midi3` = 5-pin DIN out.
 
-At boot the firmware sends sensible GM programs to the VS1053 (Synth Bass 1 on
-channels 1–4, drum kit on channel 10); change instruments live with Program Change.
+Defaults on a freshly flashed unit:
+- 303 tracks 1–4 → VS1053, MIDI channels 1–4, instrument **Synth Bass 1** (GM 39).
+- 808 drum track → VS1053, MIDI **channel 10**, **standard GM drum kit**.
+
+Everything is editable on the **System** page → subpage 2 ("track config") per track:
+- **out**   — output port (`midi1`/`midi2`/`midi3`).
+- **channel** — MIDI channel (set to 10 for GM drums).
+- **instr**  — GM instrument / Program Change (1–128). Scrolling **auditions the
+  sound live**. For the drum track this selects the kit (e.g. 26 = TR-808 kit).
+
+For **dual output**, route some tracks to `midi2`/`midi3` to drive external gear
+while others play the VS1053 at the same time.
+
+## Adjusting VS1053 sound parameters
+
+The **MIDI** page exposes a General-MIDI control set the VS1053 responds to; these
+CCs are sent to whichever port the selected track targets (the VS1053 when routed
+there): **cutoff** (CC74), **reso** (CC71), **attack/decay/release** (CC73/75/72),
+**volume** (CC7), **pan** (CC10), **reverb** (CC91), **chorus** (CC93),
+**mod** (CC1), **express** (CC11), **sustain** (CC64). Drum track: volume, pan,
+reverb, chorus. Map a control to a pot/encoder or edit its value directly.
 
 ## Bring-up tips
 1. Confirm the OLED first (I2C scan should find 0x3C).
