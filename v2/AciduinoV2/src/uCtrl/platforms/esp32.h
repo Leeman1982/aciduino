@@ -53,16 +53,29 @@ void initTimer(uint32_t init_clock)
     // create the ctrlTask
     xTaskCreate(ctrlTask, "ctrlTask", CTRL_STACK_SIZE, NULL, CTRL_TASK_PRIORITY, &_taskHandle);
 
+#if defined(ESP_ARDUINO_VERSION_MAJOR) && ESP_ARDUINO_VERSION_MAJOR >= 3
+    // ESP32 Arduino core 3.x: timerBegin() takes the frequency directly.
+    // The 2.x setup used prescaler 60 of the 80 MHz APB clock = 1.333 MHz, so
+    // request the same frequency to keep init_clock alarm units identical.
+    _uctrlTimer = timerBegin(1333333);
+
+    // attach to generic uctrl ISR (2-arg form on 3.x)
+    timerAttachInterrupt(_uctrlTimer, &handlerISR);
+
+    // init clock tick time and activate it (autoreload, unlimited reloads)
+    timerAlarm(_uctrlTimer, init_clock, true, 0);
+#else
     _uctrlTimer = timerBegin(TIMER_ID, 60, true);
 
     // attach to generic uclock ISR
     timerAttachInterrupt(_uctrlTimer, &handlerISR, false);
 
     // init clock tick time
-    timerAlarmWrite(_uctrlTimer, init_clock, true); 
+    timerAlarmWrite(_uctrlTimer, init_clock, true);
 
     // activate it!
     timerAlarmEnable(_uctrlTimer);
+#endif
 }
 
 } // end namespace uctrl

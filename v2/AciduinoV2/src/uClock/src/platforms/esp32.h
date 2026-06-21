@@ -47,19 +47,37 @@ void initTimer(uint32_t init_clock)
     // create the clockTask
     xTaskCreate(clockTask, "clockTask", CLOCK_STACK_SIZE, NULL, 1, &taskHandle);
 
+#if defined(ESP_ARDUINO_VERSION_MAJOR) && ESP_ARDUINO_VERSION_MAJOR >= 3
+    // ESP32 Arduino core 3.x timer API: timerBegin() takes the timer frequency
+    // directly. Use 1 MHz so the alarm value is expressed in microseconds (the
+    // same unit the old prescaler-80 setup produced).
+    _uclockTimer = timerBegin(1000000);
+
+    // attach to generic uclock ISR (2-arg form on 3.x)
+    timerAttachInterrupt(_uclockTimer, &handlerISR);
+
+    // init clock tick time and activate it (autoreload, unlimited reloads)
+    timerAlarm(_uclockTimer, init_clock, true, 0);
+#else
+    // ESP32 Arduino core 2.x timer API (prescaler 80 of the 80 MHz APB = 1 MHz)
     _uclockTimer = timerBegin(TIMER_ID, 80, true);
 
     // attach to generic uclock ISR
     timerAttachInterrupt(_uclockTimer, &handlerISR, false);
 
     // init clock tick time
-    timerAlarmWrite(_uclockTimer, init_clock, true); 
+    timerAlarmWrite(_uclockTimer, init_clock, true);
 
     // activate it!
     timerAlarmEnable(_uclockTimer);
+#endif
 }
 
 void setTimer(uint32_t us_interval)
 {
-    timerAlarmWrite(_uclockTimer, us_interval, true); 
+#if defined(ESP_ARDUINO_VERSION_MAJOR) && ESP_ARDUINO_VERSION_MAJOR >= 3
+    timerAlarm(_uclockTimer, us_interval, true, 0);
+#else
+    timerAlarmWrite(_uclockTimer, us_interval, true);
+#endif
 }
