@@ -227,11 +227,11 @@ static void renderBlock(int16_t* out, int frames) {
       advanceEnv(v);
     }
 
-    // master scaling + clip
-    left  *= 0.5f;
-    right *= 0.5f;
-    if (left  >  32767.0f) left  =  32767.0f; else if (left  < -32768.0f) left  = -32768.0f;
-    if (right >  32767.0f) right =  32767.0f; else if (right < -32768.0f) right = -32768.0f;
+    // master gain low enough to leave headroom for stacked voices, then a
+    // tanh soft-limiter so dense hits compress gracefully instead of clipping.
+    const float MASTER = 0.30f;
+    left  = tanhf(left  * MASTER * (1.0f / 32768.0f)) * 32767.0f;
+    right = tanhf(right * MASTER * (1.0f / 32768.0f)) * 32767.0f;
 
     out[2 * f]     = (int16_t)left;
     out[2 * f + 1] = (int16_t)right;
