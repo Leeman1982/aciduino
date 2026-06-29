@@ -1,6 +1,14 @@
 #include "aciduino.hpp"
 
 //
+// On-board General MIDI synth (build-wide switch in synth/synth_config.h)
+//
+#include "synth/synth_config.h"
+#if defined(USE_GM_SYNTH)
+#include "synth/gm_synth.h"
+#endif
+
+//
 // setup and runtime
 //
 void Aciduino::init() {
@@ -657,6 +665,18 @@ int Aciduino::freeRam ()
 // used by aciduino.seq object as callback to spill data out
 void Aciduino::sequencerOutHandler(uint8_t msg_type, uint8_t note, uint8_t velocity, uint8_t track)
 {
+#if defined(USE_GM_SYNTH)
+  // mirror every sequencer note into the on-board GM synth. The track's MIDI
+  // channel selects the GM program; set an 808/drum track to channel 10 in the
+  // MIDI page to play it through the GM percussion bank.
+  uint8_t synth_channel = aciduino._track_output_setup[track].channel;
+  if (msg_type == NOTE_ON) {
+    gmSynthNoteOn(synth_channel, note, velocity);
+  } else if (msg_type == NOTE_OFF) {
+    gmSynthNoteOff(synth_channel, note);
+  }
+#endif
+
   switch(aciduino._track_output_setup[track].output) {
     case MIDI_OUTPUT:
       aciduino.midiSequencerOutHandler(msg_type, note, velocity, aciduino._track_output_setup[track].channel, aciduino._track_output_setup[track].port);

@@ -35,7 +35,8 @@
 //
 // Select your platform port
 //
-#include "src/ports/esp32/wroom.h"
+#include "src/ports/esp32/wroom_gm_synth.h" // ESP32 WROOM + on-board GM synth (PCM5102)
+//#include "src/ports/esp32/wroom.h"
 //#include "src/ports/avr/mega.h"
 //#include "src/ports/teensy/protoboard.h"
 //#include "src/ports/esp32/wroom-ext1.h"
