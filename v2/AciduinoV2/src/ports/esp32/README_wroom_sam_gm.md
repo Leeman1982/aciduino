@@ -92,6 +92,26 @@ serial bridge, `USE_MIDI1`), or extend the firmware to send Program Changes.
 - Default partition scheme is fine (no embedded soundfont in this build).
 - PSRAM: not required.
 
+### After pulling in the `uCtrl`/`uClock` submodules: delete their `examples/` folders
+
+`uCtrl` and `uClock` are full library repos vendored directly under `src/`, and
+each ships its own `examples/` folder with unrelated demo sketches (some
+Teensy/AVR-specific). Arduino's compiler recursively sweeps up **every**
+`.c`/`.cpp` file under the sketch tree — not just the ones this firmware
+`#include`s — so those examples get pulled into the build and fail with
+missing-header errors (e.g. `usb_names.h`, which Teensyduino auto-generates
+and only exists for Teensy USB-MIDI builds).
+
+Once the submodules are populated (via `git submodule update --init
+--recursive` or a manual copy), delete:
+
+```
+src/uCtrl/examples
+src/uClock/examples
+```
+
+Safe to remove — nothing in the Aciduino firmware itself references them.
+
 > ⚠️ This firmware has not been compiled against the ESP32 Arduino toolchain or
 > flashed in this environment (the `uCtrl`/`uClock` submodules were not present
 > and no toolchain was available). Validate the serial-MIDI wiring to the module
